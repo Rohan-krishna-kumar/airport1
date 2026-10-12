@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROHAN FLIGHTS | Airport Flight Booking & Radar System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #050505; color: #facc15; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #121212; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333333; border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #eab308; }
+        
+        /* Custom radar sweep animation */
+        @keyframes radar-sweep {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-radar-sweep {
+            animation: radar-sweep 4s linear infinite;
+            transform-origin: center;
+        }
+    </style>
+</head>
+<body class="bg-[#050505] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-yellow-400 selection:text-black">
+
+    <header class="bg-[#0a0a0a] border-b border-yellow-500/20 sticky top-0 z-50 shadow-2xl backdrop-blur-md bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer group" onclick="switchTab('search')">
+                <div class="bg-yellow-400 text-black p-2 rounded-xl shadow-[0_0_15px_rgba(234,179,8,0.4)] flex items-center justify-center transition group-hover:scale-105">
+                    <i class="fa-solid fa-plane-departure text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold tracking-tight text-white group-hover:text-yellow-400 transition">ROHAN FLIGHTS</span>
+                    <span class="text-[10px] text-yellow-400/80 uppercase font-mono block -mt-1 tracking-widest">Radar & Flight Hub</span>
+                </div>
+            </div>
+            
+            <nav class="hidden md:flex items-center space-x-1">
+                <button onclick="switchTab('search')" id="nav-search" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition bg-yellow-400 text-black shadow-lg shadow-yellow-400/20 flex items-center space-x-2">
+                    <i class="fa-solid fa-magnifying-glass"></i><span>Book Flight</span>
+                </button>
+                <button onclick="switchTab('radar')" id="nav-radar" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition text-yellow-400/80 hover:text-yellow-400 hover:bg-yellow-400/10 flex items-center space-x-2 relative">
+                    <i class="fa-solid fa-satellite-dish"></i><span>Live Radar</span>
+                    <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                    </span>
+                </button>
+                <button onclick="switchTab('my-bookings')" id="nav-my-bookings" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-yellow-400 hover:bg-yellow-400/10 flex items-center space-x-2">
+                    <i class="fa-solid fa-ticket"></i><span>My Bookings</span>
+                    <span id="booking-badge" class="ml-1 bg-yellow-400 text-black text-xs px-1.5 py-0.2 rounded-full font-bold">0</span>
+                </button>
+                <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition text-slate-300 hover:text-yellow-400 hover:bg-yellow-400/10 flex items-center space-x-2">
+                    <i class="fa-solid fa-gauge-high"></i><span>Admin Hub</span>
+                </button>
+            </nav>
+
+            <!-- Mobile menu button -->
+            <div class="md:hidden flex items-center">
+                <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="text-yellow-400 p-2 focus:outline-none">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Nav Drawer -->
+        <div id="mobile-menu" class="hidden md:hidden bg-[#0d0d0d] border-t border-yellow-500/20 px-4 pt-2 pb-4 space-y-1">
+            <button onclick="switchTab('search'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-semibold text-black bg-yellow-400 flex items-center space-x-3">
+                <i class="fa-solid fa-magnifying-glass w-5"></i><span>Book Flight</span>
+            </button>
+            <button onclick="switchTab('radar'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-semibold text-yellow-400 hover:bg-yellow-400/10 flex items-center space-x-3">
+                <i class="fa-solid fa-satellite-dish w-5"></i><span>Live Radar</span>
+            </button>
+            <button onclick="switchTab('my-bookings'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-semibold text-slate-300 hover:bg-yellow-400/10 flex items-center space-x-3">
+                <i class="fa-solid fa-ticket w-5"></i><span>My Bookings</span>
+            </button>
+            <button onclick="switchTab('admin'); toggleMobileMenu();" class="w-full text-left px-3 py-2 rounded-md text-sm font-semibold text-slate-300 hover:bg-yellow-400/10 flex items-center space-x-3">
+                <i class="fa-solid fa-gauge-high w-5"></i><span>Admin Hub</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- NOTIFICATION TOAST -->
+        <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-24 opacity-0 transition-all duration-300 flex items-center bg-[#111111] text-yellow-400 px-5 py-3.5 rounded-xl shadow-[0_0_25px_rgba(234,179,8,0.3)] border border-yellow-500/40 space-x-3">
+            <div id="toast-icon" class="text-yellow-400 text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div id="toast-message" class="text-sm font-semibold text-slate-200">System alert notification</div>
+        </div>
+
+        <!-- TAB 1: FLIGHT SEARCH & LISTING -->
+        <section id="tab-search" class="tab-content space-y-8">
+            <!-- Hero banner search card -->
+            <div class="bg-gradient-to-br from-[#121212] via-[#0a0a0a] to-[#000000] rounded-3xl shadow-2xl p-6 sm:p-10 text-white relative overflow-hidden border border-yellow-500/30">
+                <div class="absolute right-0 bottom-0 opacity-10 transform translate-x-10 translate-y-10 pointer-events-none">
+                    <i class="fa-solid fa-jet-fighter text-[280px] text-yellow-400"></i>
+                </div>
+                <div class="relative z-10 max-w-2xl mb-6">
+                    <div class="inline-flex items-center space-x-2 bg-yellow-400/10 text-yellow-400 px-3 py-1 rounded-full text-xs font-mono font-bold mb-3 border border-yellow-500/30">
+                        <i class="fa-solid fa-radar"></i><span>ROHAN FLIGHTS RADAR NETWORK</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 text-white">ROHAN FLIGHTS Booking & Live Radar</h1>
+                    <p class="text-slate-400 text-sm sm:text-base">Monitor real-time delays, track aircraft trajectories on radar, and book seats instantly.</p>
+                </div>
+
+                <!-- Search form grid -->
+                <div class="bg-[#18181b]/80 backdrop-blur-md p-4 sm:p-6 rounded-2xl border border-yellow-500/20 shadow-2xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-mono font-semibold uppercase tracking-wider text-yellow-400/80 mb-1.5"><i class="fa-solid fa-plane-departure mr-1.5"></i> From</label>
+                        <select id="search-from" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            <option value="">All Origins</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono font-semibold uppercase tracking-wider text-yellow-400/80 mb-1.5"><i class="fa-solid fa-plane-arrival mr-1.5"></i> To</label>
+                        <select id="search-to" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            <option value="">All Destinations</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono font-semibold uppercase tracking-wider text-yellow-400/80 mb-1.5"><i class="fa-solid fa-calendar mr-1.5"></i> Date</label>
+                        <input type="date" id="search-date" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono font-semibold uppercase tracking-wider text-yellow-400/80 mb-1.5"><i class="fa-solid fa-chair mr-1.5"></i> Class</label>
+                        <select id="search-class" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            <option value="">All Classes</option>
+                            <option value="Economy">Economy</option>
+                            <option value="Business">Business</option>
+                            <option value="First Class">First Class</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2 text-xs font-mono text-slate-400">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse"></span>
+                        <span id="active-flights-count">Live flight telemetry active</span>
+                    </div>
+                    <div class="flex space-x-3 w-full sm:w-auto">
+                        <button onclick="resetFilters()" class="px-4 py-2.5 bg-[#1f1f23] hover:bg-[#27272a] text-slate-300 rounded-xl text-sm font-medium transition border border-yellow-500/20 flex-1 sm:flex-none">Reset</button>
+                        <button onclick="filterFlights()" class="px-6 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm shadow-lg shadow-yellow-400/20 transition flex items-center justify-center space-x-2 flex-1 sm:flex-none">
+                            <i class="fa-solid fa-magnifying-glass"></i><span>Search Flights</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter chips & sorting -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#111111] p-4 rounded-2xl shadow-sm border border-yellow-500/20">
+                <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 custom-scrollbar">
+                    <span class="text-xs font-mono uppercase tracking-wider text-yellow-400/70 whitespace-nowrap mr-1">Airlines:</span>
+                    <button onclick="filterByAirline('all')" class="airline-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-yellow-400 text-black transition whitespace-nowrap" data-airline="all">All Airlines</button>
+                    <button onclick="filterByAirline('ROHAN FLIGHTS')" class="airline-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#18181b] text-slate-300 hover:bg-yellow-400/20 hover:text-yellow-400 transition whitespace-nowrap border border-yellow-500/20" data-airline="ROHAN FLIGHTS">ROHAN FLIGHTS</button>
+                    <button onclick="filterByAirline('Global Airways')" class="airline-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#18181b] text-slate-300 hover:bg-yellow-400/20 hover:text-yellow-400 transition whitespace-nowrap border border-yellow-500/20" data-airline="Global Airways">Global Airways</button>
+                    <button onclick="filterByAirline('Pacific Jet')" class="airline-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#18181b] text-slate-300 hover:bg-yellow-400/20 hover:text-yellow-400 transition whitespace-nowrap border border-yellow-500/20" data-airline="Pacific Jet">Pacific Jet</button>
+                </div>
+                <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
+                    <span class="text-xs font-mono uppercase tracking-wider text-yellow-400/70 whitespace-nowrap">Sort By:</span>
+                    <select id="sort-by" onchange="filterFlights()" class="bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 text-xs rounded-xl px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                        <option value="price-asc">Price: Low to High</option>
+                        <option value="price-desc">Price: High to Low</option>
+                        <option value="duration">Duration: Shortest</option>
+                        <option value="departure">Departure Time</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Flight cards list container -->
+            <div id="flights-container" class="space-y-4">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+        <section id="tab-radar" class="tab-content hidden space-y-6">
+            <div class="bg-[#111111] p-6 rounded-3xl shadow-xl border border-yellow-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center space-x-2 text-yellow-400 text-xs font-mono font-bold uppercase tracking-widest mb-1">
+                        <i class="fa-solid fa-satellite-dish animate-pulse"></i><span>Real-Time Airspace Radar</span>
+                    </div>
+                    <h2 class="text-2xl font-black text-white">Live Flight Tracking Scope</h2>
+                    <p class="text-xs text-slate-400">Click on any radar blip to inspect aircraft telemetry, coordinates, altitude, and delay warnings.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="refreshRadar()" class="px-4 py-2 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border border-yellow-500/30 rounded-xl text-xs font-semibold transition flex items-center space-x-2">
+                        <i class="fa-solid fa-rotate"></i><span>Recalibrate Radar</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Radar Scope Canvas Container -->
+                <div class="lg:col-span-2 bg-[#0a0a0a] rounded-3xl p-6 border border-yellow-500/30 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden min-h-[480px]">
+                    <!-- Radar background circles & grid lines -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                        <div class="w-96 h-96 rounded-full border border-yellow-400 absolute"></div>
+                        <div class="w-72 h-72 rounded-full border border-yellow-400 absolute"></div>
+                        <div class="w-48 h-48 rounded-full border border-yellow-400 absolute"></div>
+                        <div class="w-24 h-24 rounded-full border border-yellow-400 absolute"></div>
+                        <div class="w-full h-[1px] bg-yellow-400 absolute"></div>
+                        <div class="h-full w-[1px] bg-yellow-400 absolute"></div>
+                    </div>
+                    <!-- Rotating sweep line -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div class="w-[450px] h-[450px] rounded-full animate-radar-sweep border-r-2 border-yellow-400/80 bg-gradient-to-tr from-transparent via-yellow-400/10 to-transparent"></div>
+                    </div>
+
+                    <!-- Interactive Blips Container -->
+                    <div id="radar-blips-container" class="relative w-full h-[400px] flex items-center justify-center">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center text-xs font-mono text-yellow-400/70 bg-[#111111]/80 px-4 py-2 rounded-xl border border-yellow-500/20">
+                        <span>LAT/LONG: 34.0522° N, 118.2437° W</span>
+                        <span>SWEEP: 360° ACTIVE</span>
+                        <span id="radar-active-count">0 AIRCRAFT TRACKED</span>
+                    </div>
+                </div>
+
+                <!-- Radar Telemetry Inspector Panel -->
+                <div class="bg-[#111111] rounded-3xl p-6 border border-yellow-500/30 shadow-xl flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-yellow-500/20 pb-4 mb-4">
+                            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-crosshairs text-yellow-400"></i>
+                                <span>Telemetry Inspector</span>
+                            </h3>
+                            <span class="text-xs font-mono bg-yellow-400/10 text-yellow-400 px-2 py-0.5 rounded border border-yellow-500/30">IDLE</span>
+                        </div>
+                        <div id="radar-inspector-content" class="space-y-4 text-sm text-slate-300">
+                            <div class="text-center py-12 text-slate-500">
+                                <i class="fa-solid fa-hand-pointer text-3xl mb-2 text-yellow-400/40"></i>
+                                <p class="text-xs">Click any blip on the radar scope to view flight parameters and delay alerts.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#0a0a0a] p-4 rounded-2xl border border-yellow-500/20 text-xs space-y-2 font-mono">
+                        <div class="text-yellow-400 font-bold flex items-center space-x-1.5">
+                            <i class="fa-solid fa-shield-halved"></i><span>AIRSPACE ADVISORY</span>
+                        </div>
+                        <div class="text-slate-400 text-[11px]">Automatic sector scan reports normal atmospheric pressure across all monitored flight corridors.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-booking" class="tab-content hidden space-y-6">
+            <div class="flex items-center justify-between bg-[#111111] p-4 rounded-2xl shadow-sm border border-yellow-500/20">
+                <button onclick="switchTab('search')" class="inline-flex items-center space-x-2 text-sm font-semibold text-yellow-400 hover:text-yellow-300 transition">
+                    <i class="fa-solid fa-arrow-left"></i><span>Back to Flight Search</span>
+                </button>
+                <div class="text-xs font-mono text-slate-400 uppercase tracking-wider">Secure Reservation Terminal</div>
+            </div>
+
+            <div id="booking-flight-summary" class="bg-gradient-to-r from-[#18181b] to-[#0a0a0a] text-white rounded-3xl p-6 shadow-lg border border-yellow-500/30">
+                <!-- Injected flight summary banner -->
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left 2 cols: Passenger Details & Seat Selection -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Passenger details form -->
+                    <div class="bg-[#111111] rounded-3xl p-6 shadow-sm border border-yellow-500/20 space-y-4">
+                        <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-user-pen text-yellow-400"></i>
+                            <span>Passenger Credentials</span>
+                        </h2>
+                        <form id="passenger-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Full Name</label>
+                                <input type="text" id="p-name" required placeholder="e.g., Alexander Wright" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Email Address</label>
+                                <input type="email" id="p-email" required placeholder="alexander@example.com" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Phone Number</label>
+                                <input type="tel" id="p-phone" required placeholder="+1 (555) 019-2834" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Passport / ID Number</label>
+                                <input type="text" id="p-passport" required placeholder="AB9823412" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Interactive Seat Map -->
+                    <div class="bg-[#111111] rounded-3xl p-6 shadow-sm border border-yellow-500/20 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-chair text-yellow-400"></i>
+                               <span>Aircraft Cabin Seat Map</span>
+                            </h2>
+                            <div class="flex items-center space-x-4 text-xs font-mono text-slate-400">
+                                <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-[#1f1f23] border border-yellow-500/20 inline-block"></span><span>Available</span></div>
+                                <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-yellow-400 inline-block"></span><span>Selected</span></div>
+                                <div class="flex items-center space-x-1"><span class="w-3 h-3 rounded bg-slate-700 opacity-50 inline-block"></span><span>Occupied</span></div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400">Select an available seat for your journey.</p>
+                        
+                        <!-- Airplane cabin visualization -->
+                        <div class="bg-[#0a0a0a] rounded-2xl p-6 border border-yellow-500/20 flex flex-col items-center">
+                            <div class="w-16 h-8 bg-[#18181b] border border-yellow-500/20 rounded-t-full mb-6 flex items-center justify-center text-xs font-mono font-bold text-yellow-400">Cockpit</div>
+                            <div id="seat-map" class="grid grid-cols-6 gap-2 w-full max-w-md">
+                                <!-- Generated by JS -->
+                            </div>
+                            <div class="mt-6 text-xs font-mono text-slate-300 bg-[#111111] px-4 py-2 rounded-xl shadow-sm border border-yellow-500/20">
+                                Chosen Seat: <span id="selected-seat-display" class="text-yellow-400 font-bold">None</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right col: Fare breakdown & Checkout -->
+                <div class="space-y-6">
+                    <div class="bg-[#111111] rounded-3xl p-6 shadow-sm border border-yellow-500/20 space-y-4 sticky top-24">
+                        <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-receipt text-yellow-400"></i>
+                            <span>Fare Breakdown</span>
+                        </h2>
+                        
+                        <div class="space-y-3 text-sm text-slate-300 border-b border-yellow-500/10 pb-4">
+                            <div class="flex justify-between">
+                                <span id="fare-class-label">Base Fare (Economy)</span>
+                                <span id="fare-base-price" class="font-semibold text-white">$0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Seat Selection Fee</span>
+                                <span class="font-semibold text-white">$15</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Airport Taxes & Fees</span>
+                                <span class="font-semibold text-white">$45</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-2">
+                            <span class="text-base font-bold text-white">Total Price</span>
+                            <span id="fare-total-price" class="text-2xl font-black text-yellow-400">$0</span>
+                        </div>
+
+                        <!-- Payment simulated inputs -->
+                        <div class="space-y-3 pt-2">
+                            <label class="block text-xs font-mono uppercase tracking-wider text-slate-400">Payment Simulation</label>
+                            <div class="bg-[#0a0a0a] p-3 rounded-xl border border-yellow-500/20 flex items-center space-x-3">
+                                <i class="fa-solid fa-credit-card text-xl text-yellow-400"></i>
+                                <div class="flex-grow">
+                                    <div class="text-xs font-bold text-white">Simulated Secure Card</div>
+                                    <div class="text-xs font-mono text-slate-500">•••• •••• •••• 4242</div>
+                                </div>
+                                <span class="text-xs bg-yellow-400/10 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-full font-bold">Verified</span>
+                            </div>
+                        </div>
+
+                        <button onclick="confirmBooking()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3.5 rounded-2xl shadow-lg shadow-yellow-400/20 transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-lock text-xs"></i><span>Complete Booking</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-my-bookings" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#111111] p-6 rounded-3xl shadow-sm border border-yellow-500/20">
+                <div>
+                    <h1 class="text-2xl font-bold text-white">My Confirmed Bookings</h1>
+                    <p class="text-sm text-slate-400">Access boarding passes, ticket details, or manage cancellations.</p>
+                </div>
+                <div class="relative w-full sm:w-64">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="search-bookings-input" onkeyup="renderMyBookings()" placeholder="Search by reference or name..." class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                </div>
+            </div>
+
+            <div id="bookings-list-container" class="space-y-4">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+        <section id="tab-admin" class="tab-content hidden space-y-6">
+            <!-- Admin KPI stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-[#111111] p-6 rounded-3xl shadow-sm border border-yellow-500/20 flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-yellow-400/10 text-yellow-400 border border-yellow-500/30 rounded-2xl flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-plane"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider">Total Active Flights</div>
+                        <div id="admin-stat-flights" class="text-2xl font-extrabold text-white">0</div>
+                    </div>
+                </div>
+                <div class="bg-[#111111] p-6 rounded-3xl shadow-sm border border-yellow-500/20 flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-yellow-400/10 text-yellow-400 border border-yellow-500/30 rounded-2xl flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider">Confirmed Bookings</div>
+                        <div id="admin-stat-bookings" class="text-2xl font-extrabold text-white">0</div>
+                    </div>
+                </div>
+                <div class="bg-[#111111] p-6 rounded-3xl shadow-sm border border-yellow-500/20 flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-yellow-400/10 text-yellow-400 border border-yellow-500/30 rounded-2xl flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider">Total Revenue</div>
+                        <div id="admin-stat-revenue" class="text-2xl font-extrabold text-white">$0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add new flight card -->
+            <div class="bg-[#111111] rounded-3xl p-6 shadow-sm border border-yellow-500/20 space-y-6">
+                <div class="flex items-center justify-between border-b border-yellow-500/10 pb-4">
+                    <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-plus-circle text-yellow-400"></i>
+                        <span>Add New Flight Schedule</span>
+                    </h2>
+                    <span class="text-xs font-mono bg-yellow-400/10 text-yellow-400 border border-yellow-500/30 px-3 py-1 rounded-full font-bold">Manager Access</span>
+                </div>
+
+                <form id="add-flight-form" onsubmit="addNewFlight(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Flight Number</label>
+                        <input type="text" id="af-number" required placeholder="SW-902" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Airline Name</label>
+                        <input type="text" id="af-airline" required placeholder="SkyWings Air" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Source Airport</label>
+                        <input type="text" id="af-source" required placeholder="JFK (New York)" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Destination Airport</label>
+                        <input type="text" id="af-dest" required placeholder="LHR (London)" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Departure Date</label>
+                        <input type="date" id="af-date" required class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Departure Time</label>
+                        <input type="text" id="af-time" required placeholder="08:30 AM" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Duration</label>
+                        <input type="text" id="af-duration" required placeholder="7h 15m" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Class</label>
+                        <select id="af-class" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                            <option value="Economy">Economy</option>
+                            <option value="Business">Business</option>
+                            <option value="First Class">First Class</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase tracking-wider text-slate-400 mb-1">Price ($)</label>
+                        <input type="number" id="af-price" required placeholder="450" class="w-full bg-[#0a0a0a] border border-yellow-500/30 text-yellow-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    </div>
+                    <div class="sm:col-span-2 lg:col-span-3 flex justify-end">
+                        <button type="submit" class="px-6 py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm shadow-lg shadow-yellow-400/20 transition flex items-center space-x-2">
+                            <i class="fa-solid fa-plus"></i><span>Publish Flight Schedule</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Admin Flight Directory Table -->
+            <div class="bg-[#111111] rounded-3xl p-6 shadow-sm border border-yellow-500/20 space-y-4">
+                <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-list text-yellow-400"></i>
+                    <span>Manage Flight Directory & Delays</span>
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-yellow-500/10 text-xs font-mono uppercase tracking-wider text-yellow-400/80">
+                                <th class="py-3 px-4">Flight</th>
+                                <th class="py-3 px-4">Route</th>
+                                <th class="py-3 px-4">Time</th>
+                                <th class="py-3 px-4">Status / Delay</th>
+                                <th class="py-3 px-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-flights-table-body" class="text-sm text-slate-300">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- BOARDING PASS MODAL -->
+    <div id="boarding-pass-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div id="boarding-pass-content" class="bg-[#111111] border border-yellow-500/30 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all scale-95 opacity-0 duration-300">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+
+    <footer class="bg-[#0a0a0a] text-slate-400 border-t border-yellow-500/20 mt-12 py-8 text-xs text-center">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-plane-departure text-yellow-400 text-base"></i>
+                <span class="font-bold text-white text-sm">ROHAN FLIGHTS Airport Management & Radar Hub</span>
+            </div>
+            <div>&copy; 2026 ROHAN FLIGHTS. All rights reserved.</div>
+            <div class="flex space-x-4">
+                <a href="#" class="hover:text-yellow-400 transition">Privacy Policy</a>
+                <a href="#" class="hover:text-yellow-400 transition">Terms of Service</a>
+                <a href="#" class="hover:text-yellow-400 transition">Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        <!-- Mock Default Flights Data with initial radar coordinates & delay state -->
+        const defaultFlights = [
+            {
+                id: 'FL-101',
+                number: 'RF-101',
+                airline: 'ROHAN FLIGHTS',
+                source: 'DEL (New Delhi)',
+                dest: 'BOM (Mumbai)',
+                date: '2026-06-15',
+                time: '08:30 AM',
+                etd: '08:30 AM',
+                duration: '2h 15m',
+                class: 'Economy',
+                price: 4500,
+                seatsTotal: 120,
+                seatsBooked: ['12A', '12B', '15C'],
+                radarCoord: { x: 35, y: 40, heading: 'NE', altitude: '34,000 ft', speed: '540 kts' },
+                delay: { isDelayed: false, reason: '', durationMins: 0 }
+            },
+            {
+                id: 'FL-102',
+                number: 'GA-405',
+                airline: 'Global Airways',
+                source: 'BLR (Bengaluru)',
+                dest: 'DEL (New Delhi)',
+                date: '2026-06-16',
+                time: '11:00 AM',
+                etd: '11:45 AM',
+                duration: '2h 45m',
+                class: 'Business',
+                price: 12500,
+                seatsTotal: 60,
+                seatsBooked: ['2A', '4B'],
+                radarCoord: { x: 70, y: 25, heading: 'NW', altitude: '38,000 ft', speed: '570 kts' },
+                delay: { isDelayed: true, reason: 'Air Traffic Control Congestion', durationMins: 45 }
+            },
+            {
+                id: 'FL-103',
+                number: 'PJ-882',
+                airline: 'Pacific Jet',
+                source: 'MAA (Chennai)',
+                dest: 'CCU (Kolkata)',
+                date: '2026-06-18',
+                time: '03:15 PM',
+                etd: '03:15 PM',
+                duration: '2h 20m',
+                class: 'Economy',
+                price: 5800,
+                seatsTotal: 150,
+                seatsBooked: ['10A', '10B', '10C', '22F'],
+                radarCoord: { x: 20, y: 75, heading: 'E', altitude: '36,000 ft', speed: '550 kts' },
+                delay: { isDelayed: false, reason: '', durationMins: 0 }
+            },
+            {
+                id: 'FL-104',
+                number: 'RF-309',
+                airline: 'ROHAN FLIGHTS',
+                source: 'BOM (Mumbai)',
+                dest: 'DXB (Dubai)',
+                date: '2026-06-20',
+                time: '09:00 PM',
+                etd: '10:15 PM',
+                duration: '3h 40m',
+                class: 'First Class',
+                price: 24000,
+                seatsTotal: 30,
+                seatsBooked: ['1A', '1B'],
+                radarCoord: { x: 80, y: 65, heading: 'S', altitude: '40,000 ft', speed: '585 kts' },
+                delay: { isDelayed: true, reason: 'Severe Weather Advisory', durationMins: 75 }
+            },
+            {
+                id: 'FL-105',
+                number: 'GA-712',
+                airline: 'Global Airways',
+                source: 'DEL (New Delhi)',
+                dest: 'LHR (London)',
+                date: '2026-06-22',
+                time: '06:45 AM',
+                etd: '06:45 AM',
+                duration: '9h 50m',
+                class: 'Economy',
+                price: 42000,
+                seatsTotal: 180,
+                seatsBooked: ['33A', '33B'],
+                radarCoord: { x: 50, y: 80, heading: 'SW', altitude: '35,000 ft', speed: '525 kts' },
+                delay: { isDelayed: false, reason: '', durationMins: 0 }
+            }
+        ];
+
+        // State variables
+        let flights = JSON.parse(localStorage.getItem('rohan_flights_v3')) || defaultFlights;
+        let bookings = JSON.parse(localStorage.getItem('rohan_bookings_v3')) || [];
+        let currentSelectedFlight = null;
+        let selectedSeat = null;
+        let activeAirlineFilter = 'all';
+
+        // Save to localStorage helper
+        function persistData() {
+            localStorage.setItem('rohan_flights_v3', JSON.stringify(flights));
+            localStorage.setItem('rohan_bookings_v3', JSON.stringify(bookings));
+            updateBadges();
+        }
+
+        // Initialize App on load
+        window.onload = function() {
+            populateDropdowns();
+            filterFlights();
+            updateBadges();
+            renderMyBookings();
+            renderAdminDashboard();
+            renderRadarScope();
+        };
+
+        // Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-yellow-400', 'text-black', 'shadow-lg');
+                btn.classList.add('text-slate-300', 'hover:text-yellow-400', 'hover:bg-yellow-400/10');
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-slate-300', 'hover:text-yellow-400', 'hover:bg-yellow-400/10');
+                activeBtn.classList.add('bg-yellow-400', 'text-black', 'shadow-lg', 'shadow-yellow-400/20');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if(tabId === 'radar') {
+                renderRadarScope();
+            }
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Toast Notification
+        function showToast(message, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+            
+            msgEl.innerText = message;
+            iconEl.innerHTML = isSuccess ? '<i class="fa-solid fa-triangle-exclamation text-yellow-400"></i>' : '<i class="fa-solid fa-circle-exclamation text-rose-400"></i>';
+            
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3800);
+        }
+
+        // Update Badges & Stats
+        function updateBadges() {
+            document.getElementById('booking-badge').innerText = bookings.length;
+            document.getElementById('admin-stat-flights').innerText = flights.length;
+            document.getElementById('admin-stat-bookings').innerText = bookings.length;
+            
+            const totalRevenue = bookings.reduce((acc, curr) => acc + (curr.totalPrice || 0), 0);
+            document.getElementById('admin-stat-revenue').innerText = `₹${totalRevenue.toLocaleString('en-IN')}`;
+        }
+
+        // Populate search dropdowns dynamically
+        function populateDropdowns() {
+            const sources = [...new Set(flights.map(f => f.source))];
+            const destinations = [...new Set(flights.map(f => f.dest))];
+            
+            const fromSelect = document.getElementById('search-from');
+            const toSelect = document.getElementById('search-to');
+            
+            fromSelect.innerHTML = '<option value="">All Origins</option>';
+            toSelect.innerHTML = '<option value="">All Destinations</option>';
+            
+            sources.forEach(src => {
+                fromSelect.innerHTML += `<option value="${src}">${src}</option>`;
+            });
+            destinations.forEach(dst => {
+                toSelect.innerHTML += `<option value="${dst}">${dst}</option>`;
+            });
+        }
+
+        function filterByAirline(airline) {
+            activeAirlineFilter = airline;
+            document.querySelectorAll('.airline-filter-btn').forEach(btn => {
+                if(btn.getAttribute('data-airline') === airline) {
+                    btn.classList.remove('bg-[#18181b]', 'text-slate-300');
+                    btn.classList.add('bg-yellow-400', 'text-black');
+                } else {
+                    btn.classList.remove('bg-yellow-400', 'text-black');
+                    btn.classList.add('bg-[#18181b]', 'text-slate-300');
+                }
+            });
+            filterFlights();
+        }
+
+        function resetFilters() {
+            document.getElementById('search-from').value = '';
+            document.getElementById('search-to').value = '';
+            document.getElementById('search-date').value = '';
+            document.getElementById('search-class').value = '';
+            filterByAirline('all');
+        }
+
+        // Render Search Results with Delay Warnings
+        function filterFlights() {
+            const source = document.getElementById('search-from').value.toLowerCase();
+            const dest = document.getElementById('search-to').value.toLowerCase();
+            const date = document.getElementById('search-date').value;
+            const flightClass = document.getElementById('search-class').value.toLowerCase();
+            const sortBy = document.getElementById('sort-by').value;
+
+            let filtered = flights.filter(f => {
+                const matchSource = !source || f.source.toLowerCase().includes(source);
+                const matchDest = !dest || f.dest.toLowerCase().includes(dest);
+                const matchDate = !date || f.date === date;
+                const matchClass = !flightClass || f.class.toLowerCase() === flightClass;
+                const matchAirline = activeAirlineFilter === 'all' || f.airline === activeAirlineFilter;
+                return matchSource && matchDest && matchDate && matchClass && matchAirline;
+            });
+
+            // Sorting
+            filtered.sort((a, b) => {
+                if(sortBy === 'price-asc') return a.price - b.price;
+                if(sortBy === 'price-desc') return b.price - a.price;
+                if(sortBy === 'duration') return parseInt(a.duration) - parseInt(b.duration);
+                if(sortBy === 'departure') return a.time.localeCompare(b.time);
+                return 0;
+            });
+
+            const container = document.getElementById('flights-container');
+            document.getElementById('active-flights-count').innerText = `${filtered.length} matching flights available`;
+
+            if(filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-[#111111] rounded-3xl p-12 text-center border border-yellow-500/20">
+                        <div class="w-16 h-16 bg-yellow-400/10 text-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-yellow-500/30">
+                            <i class="fa-solid fa-plane-slash"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1">No Flights Found</h3>
+                        <p class="text-slate-400 text-sm mb-4">Try adjusting your filters or search criteria.</p>
+                        <button onclick="resetFilters()" class="px-4 py-2 bg-yellow-400 text-black font-semibold rounded-xl text-sm">Reset Filters</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(f => {
+                const availableSeatsCount = f.seatsTotal - f.seatsBooked.length;
+                let delayBadge = '';
+                if(f.delay && f.delay.isDelayed) {
+                    delayBadge = `
+                        <div class="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs px-2.5 py-1 rounded-lg flex items-center space-x-1.5 font-mono">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>DELAYED (${f.delay.durationMins}m) &bull; ETD: ${f.etd}</span>
+                        </div>
+                    `;
+                } else {
+                    delayBadge = `
+                        <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-2.5 py-1 rounded-lg flex items-center space-x-1.5 font-mono">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>ON TIME &bull; DEP: ${f.time}</span>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="bg-[#111111] rounded-3xl p-6 shadow-sm border border-yellow-500/20 hover:border-yellow-400/50 transition flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-14 h-14 bg-yellow-400/10 text-yellow-400 border border-yellow-500/30 rounded-2xl flex items-center justify-center text-xl font-bold shrink-0">
+                                <i class="fa-solid fa-plane"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-white">${f.airline}</span>
+                                    <span class="text-xs bg-[#1f1f23] text-yellow-400 px-2 py-0.5 rounded font-mono border border-yellow-500/20">${f.number}</span>
+                                    <span class="text-xs bg-yellow-400/10 text-yellow-300 px-2 py-0.5 rounded font-bold">${f.class}</span>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-3 text-sm text-slate-300 mt-2">
+                                    <div class="font-semibold text-white">${f.date}</div>
+                                    <span class="text-xs text-slate-500">Duration: <span class="font-medium text-slate-300">${f.duration}</span></span>
+                                </div>
+                                <div class="mt-2">
+                                    ${delayBadge}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto justify-between border-t md:border-t-0 pt-4 md:pt-0 border-yellow-500/10">
+                            <div class="text-left md:text-right">
+                                <div class="text-xs font-mono text-slate-400 uppercase">Route</div>
+                                <div class="text-sm font-semibold text-white">${f.source} &rarr; ${f.dest}</div>
+                                <div class="text-xs text-yellow-400 font-mono mt-1"><i class="fa-solid fa-chair mr-1"></i>${availableSeatsCount} seats available</div>
+                            </div>
+                            <div class="flex items-center space-x-4 w-full sm:w-auto justify-between">
+                                <div class="text-right">
+                                    <div class="text-2xl font-black text-yellow-400">₹${f.price.toLocaleString('en-IN')}</div>
+                                    <div class="text-[10px] font-mono text-slate-400 uppercase">Per Passenger</div>
+                                </div>
+                                <button onclick="selectFlightForBooking('${f.id}')" class="px-6 py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-2xl text-sm shadow-lg shadow-yellow-400/20 transition">
+                                    Book Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render Radar Scope Scope & Blips
+        function renderRadarScope() {
+            const container = document.getElementById('radar-blips-container');
+            document.getElementById('radar-active-count').innerText = `${flights.length} AIRCRAFT TRACKED`;
+
+            container.innerHTML = flights.map((f, index) => {
+                // Generate default coordinates if missing
+                if(!f.radarCoord) {
+                    f.radarCoord = { x: 20 + (index * 15) % 65, y: 20 + (index * 18) % 65, heading: 'NE', altitude: '35,000 ft', speed: '550 kts' };
+                }
+                const isDelayed = f.delay && f.delay.isDelayed;
+                const blipColor = isDelayed ? 'bg-rose-500 text-white shadow-[0_0_12px_rgba(244,63,94,0.8)]' : 'bg-yellow-400 text-black shadow-[0_0_12px_rgba(234,179,8,0.8)]';
+
+                return `
+                    <div onclick="inspectRadarFlight('${f.id}')" class="absolute cursor-pointer group flex flex-col items-center transform -translate-x-1/2 -translate-y-1/2 transition hover:scale-125" style="left: ${f.radarCoord.x}%; top: ${f.radarCoord.y}%;">
+                        <div class="w-5 h-5 rounded-full ${blipColor} flex items-center justify-center text-[10px] font-bold font-mono">
+                            <i class="fa-solid fa-plane text-[10px]"></i>
+                        </div>
+                        <div class="bg-[#111111]/90 border border-yellow-500/30 text-[10px] font-mono text-yellow-300 px-2 py-0.5 rounded mt-1 whitespace-nowrap shadow-md">
+                            ${f.number} ${isDelayed ? '<span class="text-rose-400 font-bold">⚠</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function inspectRadarFlight(flightId) {
+            const f = flights.find(item => item.id === flightId);
+            if(!f) return;
+
+            const inspector = document.getElementById('radar-inspector-content');
+            const isDelayed = f.delay && f.delay.isDelayed;
+
+            inspector.innerHTML = `
+                <div class="space-y-3">
+                    <div class="bg-[#0a0a0a] p-3.5 rounded-2xl border border-yellow-500/20 space-y-1">
+                        <div class="text-xs text-yellow-400 font-mono">FLIGHT IDENTIFIER</div>
+                        <div class="text-base font-bold text-white">${f.airline} (${f.number})</div>
+                        <div class="text-xs text-slate-400">${f.source} &rarr; ${f.dest}</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <div class="bg-[#0a0a0a] p-2.5 rounded-xl border border-yellow-500/10">
+                            <span class="text-slate-500 block">ALTITUDE</span>
+                            <span class="font-bold text-white">${f.radarCoord.altitude}</span>
+                        </div>
+                        <div class="bg-[#0a0a0a] p-2.5 rounded-xl border border-yellow-500/10">
+                            <span class="text-slate-500 block">AIRSPEED</span>
+                            <span class="font-bold text-white">${f.radarCoord.speed}</span>
+                        </div>
+                        <div class="bg-[#0a0a0a] p-2.5 rounded-xl border border-yellow-500/10">
+                            <span class="text-slate-500 block">HEADING</span>
+                            <span class="font-bold text-white">${f.radarCoord.heading} SECTOR</span>
+                        </div>
+                        <div class="bg-[#0a0a0a] p-2.5 rounded-xl border border-yellow-500/10">
+                            <span class="text-slate-500 block">CLASS</span>
+                            <span class="font-bold text-yellow-400">${f.class}</span>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl border ${isDelayed ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'} text-xs font-mono">
+                        <div class="font-bold flex items-center space-x-1.5 mb-1">
+                            <i class="fa-solid ${isDelayed ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i>
+                            <span>${isDelayed ? 'DELAY WARNING ACTIVE' : 'STATUS NORMAL'}</span>
+                        </div>
+                        ${isDelayed ? `Reason: ${f.delay.reason}<br>Estimated Departure: ${f.etd}` : `Scheduled Departure: ${f.time}`}
+                    </div>
+
+                    <button onclick="selectFlightForBooking('${f.id}')" class="w-full py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-xs shadow-md transition">
+                        Proceed to Book Flight
+                    </button>
+                </div>
+            `;
+            showToast(`Inspecting radar telemetry for ${f.number}`);
+        }
+
+        function refreshRadar() {
+            // Randomly shift coordinates slightly for realistic radar simulation
+            flights.forEach(f => {
+                if(f.radarCoord) {
+                    f.radarCoord.x = Math.max(10, Math.min(90, f.radarCoord.x + (Math.random() * 6 - 3)));
+                    f.radarCoord.y = Math.max(10, Math.min(90, f.radarCoord.y + (Math.random() * 6 - 3)));
+                }
+            });
+            renderRadarScope();
+            showToast('Radar scope recalibrated successfully.');
+        }
+
+        // Proceed to Booking Flow
+        function selectFlightForBooking(flightId) {
+            currentSelectedFlight = flights.find(f => f.id === flightId);
+            if(!currentSelectedFlight) return;
+
+            selectedSeat = null;
+            document.getElementById('selected-seat-display').innerText = 'None';
+            document.getElementById('passenger-form').reset();
+
+            // Populate summary card
+            const summaryEl = document.getElementById('booking-flight-summary');
+            let delayNotice = currentSelectedFlight.delay && currentSelectedFlight.delay.isDelayed 
+                ? `<div class="mt-2 text-xs text-rose-400 font-mono"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Delay Warning: ${currentSelectedFlight.delay.reason} (ETD: ${currentSelectedFlight.etd})</div>`
+                : '';
+
+            summaryEl.innerHTML = `
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <div class="text-xs uppercase font-mono tracking-wider text-yellow-400 font-semibold mb-1">Selected Itinerary</div>
+                        <h2 class="text-xl font-bold text-white">${currentSelectedFlight.source} to ${currentSelectedFlight.dest}</h2>
+                        <div class="text-sm text-slate-300 mt-1">${currentSelectedFlight.airline} (${currentSelectedFlight.number}) &bull; ${currentSelectedFlight.date} at ${currentSelectedFlight.time}</div>
+                        ${delayNotice}
+                    </div>
+                    <div class="bg-[#0a0a0a] backdrop-blur-md px-4 py-3 rounded-2xl border border-yellow-500/20 text-right">
+                        <div class="text-xs font-mono text-slate-400">Base Fare</div>
+                        <div class="text-xl font-black text-yellow-400">₹${currentSelectedFlight.price.toLocaleString('en-IN')}</div>
+                    </div>
+                </div>
+            `;
+
+            // Update fare breakdown
+            document.getElementById('fare-class-label').innerText = `Base Fare (${currentSelectedFlight.class})`;
+            document.getElementById('fare-base-price').innerText = `₹${currentSelectedFlight.price.toLocaleString('en-IN')}`;
+            updateTotalPrice();
+
+            // Render seat map
+            renderSeatMap();
+
+            switchTab('booking');
+        }
+
+        function updateTotalPrice() {
+            if(!currentSelectedFlight) return;
+            const seatFee = selectedSeat ? 500 : 0;
+            const total = currentSelectedFlight.price + seatFee + 1200;
+            document.getElementById('fare-total-price').innerText = `₹${total.toLocaleString('en-IN')}`;
+        }
+
+        function updateTotalPrice() {
+            if(!currentSelectedFlight) return;
+            const seatFee = selectedSeat ? 15 : 0;
+            const total = currentSelectedFlight.price + seatFee + 45;
+            document.getElementById('fare-total-price').innerText = `$${total}`;
+        }
+
+        // Render Seat Map
+        function renderSeatMap() {
+            const seatMapEl = document.getElementById('seat-map');
+            const rows = 8;
+            const cols = ['A', 'B', 'C', 'D', 'E', 'F'];
+            let html = '';
+
+            for(let r = 1; r <= rows; r++) {
+                for(let c of cols) {
+                    const seatId = `${r}${c}`;
+                    const isBooked = currentSelectedFlight.seatsBooked.includes(seatId);
+                    const isSelected = selectedSeat === seatId;
+
+                    let bgClass = 'bg-[#18181b] hover:bg-yellow-400/20 hover:border-yellow-400/50 text-slate-300 cursor-pointer border border-yellow-500/20';
+                    if(isBooked) {
+                        bgClass = 'bg-[#121212] opacity-30 text-slate-600 cursor-not-allowed border border-slate-800';
+                    } else if(isSelected) {
+                        bgClass = 'bg-yellow-400 text-black shadow-md shadow-yellow-400/20 font-bold border border-yellow-400';
+                    }
+
+                    html += `
+                        <button type="button" onclick="handleSeatClick('${seatId}', ${isBooked})" class="h-10 rounded-xl text-xs font-mono font-semibold transition flex items-center justify-center ${bgClass}">
+                            ${seatId}
+                        </button>
+                    `;
+                }
+            }
+            seatMapEl.innerHTML = html;
+        }
+
+        function handleSeatClick(seatId, isBooked) {
+            if(isBooked) {
+                showToast('This seat is already occupied. Please choose another.', false);
+                return;
+            }
+            selectedSeat = seatId;
+            document.getElementById('selected-seat-display').innerText = seatId;
+            renderSeatMap();
+            updateTotalPrice();
+        }
+
+        // Confirm Booking Submission
+        function confirmBooking() {
+            const name = document.getElementById('p-name').value.trim();
+            const email = document.getElementById('p-email').value.trim();
+            const phone = document.getElementById('p-phone').value.trim();
+            const passport = document.getElementById('p-passport').value.trim();
+
+            if(!name || !email || !phone || !passport) {
+                showToast('Please complete all passenger credentials.', false);
+                return;
+            }
+
+            if(!selectedSeat) {
+                showToast('Please select a seat on the aircraft cabin map.', false);
+                return;
+            }
+
+            // Create booking record
+            const bookingRef = 'RF-' + Math.floor(100000 + Math.random() * 900000);
+            const seatFee = 500;
+            const totalPrice = currentSelectedFlight.price + seatFee + 1200;
+
+            const newBooking = {
+                id: 'BK-' + Date.now(),
+                reference: bookingRef,
+                flightId: currentSelectedFlight.id,
+                flightNumber: currentSelectedFlight.number,
+                airline: currentSelectedFlight.airline,
+                source: currentSelectedFlight.source,
+                dest: currentSelectedFlight.dest,
+                date: currentSelectedFlight.date,
+                time: currentSelectedFlight.time,
+                etd: currentSelectedFlight.etd,
+                class: currentSelectedFlight.class,
+                passengerName: name,
+                passengerEmail: email,
+                passengerPhone: phone,
+                passengerPassport: passport,
+                seat: selectedSeat,
+                totalPrice: totalPrice,
+                bookingDate: new Date().toLocaleDateString(),
+                delay: currentSelectedFlight.delay
+            };
+
+            // Update flight booked seats
+            currentSelectedFlight.seatsBooked.push(selectedSeat);
+
+            bookings.unshift(newBooking);
+            persistData();
+
+            showToast(`Booking confirmed! Reference: ${bookingRef}`);
+            renderMyBookings();
+            renderAdminDashboard();
+            filterFlights();
+
+            // Open boarding pass immediately
+            viewBoardingPass(newBooking.id);
+            switchTab('my-bookings');
+        }
+
+        // Render My Bookings List
+        function renderMyBookings() {
+            const query = (document.getElementById('search-bookings-input')?.value || '').toLowerCase();
+            const container = document.getElementById('bookings-list-container');
+            
+            const filtered = bookings.filter(b => 
+                b.reference.toLowerCase().includes(query) ||
+                b.passengerName.toLowerCase().includes(query) ||
+                b.flightNumber.toLowerCase().includes(query)
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-[#111111] rounded-3xl p-12 text-center border border-yellow-500/20">
+                        <div class="w-16 h-16 bg-yellow-400/10 text-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-yellow-500/30">
+                            <i class="fa-solid fa-ticket"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1">No Bookings Found</h3>
+                        <p class="text-slate-400 text-sm">You have not booked any flights yet or no search results matched.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(b => `
+                <div class="bg-[#111111] rounded-3xl p-6 shadow-sm border border-yellow-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-yellow-400/10 text-yellow-400 border border-yellow-500/30 rounded-2xl flex items-center justify-center text-lg font-bold shrink-0">
+                            <i class="fa-solid fa-ticket"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-white">${b.passengerName}</span>
+                                <span class="text-xs bg-yellow-400/10 text-yellow-400 px-2 py-0.5 rounded font-mono border border-yellow-500/20">${b.reference}</span>
+                            </div>
+                            <div class="text-sm text-slate-300 mt-1">${b.airline} (${b.flightNumber}) &bull; Seat: <span class="text-yellow-400 font-bold font-mono">${b.seat}</span></div>
+                            <div class="text-xs text-slate-500 mt-1">${b.source} &rarr; ${b.dest} &bull; ${b.date} (${b.time})</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                        <button onclick="viewBoardingPass('${b.id}')" class="px-4 py-2 bg-yellow-400 text-black font-bold rounded-xl text-xs hover:bg-yellow-300 transition">
+                            Boarding Pass
+                        </button>
+                        <button onclick="cancelBooking('${b.id}')" class="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold transition">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Cancel Booking
+        function cancelBooking(bookingId) {
+            if(!confirm('Are you sure you want to cancel this booking?')) return;
+            
+            const index = bookings.findIndex(b => b.id === bookingId);
+            if(index !== -1) {
+                const b = bookings[index];
+                // Remove seat allocation from flight
+                const fl = flights.find(f => f.id === b.flightId);
+                if(fl) {
+                    fl.seatsBooked = fl.seatsBooked.filter(s => s !== b.seat);
+                }
+                bookings.splice(index, 1);
+                persistData();
+                showToast('Booking cancelled successfully.');
+                renderMyBookings();
+                renderAdminDashboard();
+                filterFlights();
+            }
+        }
+
+        // View Boarding Pass Modal
+        function viewBoardingPass(bookingId) {
+            const b = bookings.find(item => item.id === bookingId);
+            if(!b) return;
+
+            const modal = document.getElementById('boarding-pass-modal');
+            const content = document.getElementById('boarding-pass-content');
+
+            content.innerHTML = `
+                <div class="p-6 space-y-6">
+                    <div class="flex items-center justify-between border-b border-yellow-500/20 pb-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-plane-departure text-yellow-400 text-xl"></i>
+                            <span class="font-extrabold text-white tracking-wider">ROHAN FLIGHTS</span>
+                        </div>
+                        <span class="text-xs font-mono bg-yellow-400/10 text-yellow-400 px-3 py-1 rounded-full border border-yellow-500/30 font-bold">BOARDING PASS</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-xs font-mono">
+                        <div>
+                            <span class="text-slate-500 block">PASSENGER</span>
+                            <span class="font-bold text-white text-sm">${b.passengerName}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">BOOKING REF</span>
+                            <span class="font-bold text-yellow-400 text-sm">${b.reference}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">FLIGHT</span>
+                            <span class="font-bold text-white">${b.flightNumber} (${b.airline})</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">SEAT / CLASS</span>
+                            <span class="font-bold text-yellow-400">${b.seat} (${b.class})</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-sm">
+                        <div>
+                            <div class="text-xs font-mono text-slate-500 uppercase">Departure</div>
+                            <div class="font-bold text-white">${b.source}</div>
+                            <div class="text-xs font-mono text-yellow-400">${b.date} at ${b.etd || b.time}</div>
+                        </div>
+                        <div class="text-center px-4">
+                            <i class="fa-solid fa-plane text-yellow-400 text-lg"></i>
+                            <div class="text-[10px] font-mono text-slate-500 mt-1">Confirmed</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-mono text-slate-500 uppercase">Destination</div>
+                            <div class="font-bold text-white">${b.dest}</div>
+                            <div class="text-xs font-mono text-slate-400">Terminal 1</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#0a0a0a] p-4 rounded-2xl border border-dashed border-yellow-500/30 flex items-center justify-between">
+                        <div class="space-y-1">
+                            <div class="text-xs font-mono font-bold text-yellow-400">Gate Boarding Notice</div>
+                            <div class="text-[11px] text-slate-400">Boarding closes 20 minutes prior to departure. Present passport and boarding pass at gate.</div>
+                        </div>
+                        <div class="font-mono text-xs bg-yellow-400 text-black px-3 py-2 rounded-xl text-center font-bold">
+                            <i class="fa-solid fa-qrcode text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <button onclick="closeBoardingPass()" class="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm transition">
+                        Close Boarding Pass
+                    </button>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeBoardingPass() {
+            const modal = document.getElementById('boarding-pass-modal');
+            const content = document.getElementById('boarding-pass-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Admin: Add New Flight
+        function addNewFlight(e) {
+            e.preventDefault();
+            const number = document.getElementById('af-number').value.trim();
+            const airline = document.getElementById('af-airline').value.trim();
+            const source = document.getElementById('af-source').value.trim();
+            const dest = document.getElementById('af-dest').value.trim();
+            const date = document.getElementById('af-date').value;
+            const time = document.getElementById('af-time').value.trim();
+            const duration = document.getElementById('af-duration').value.trim();
+            const flightClass = document.getElementById('af-class').value;
+            const price = parseFloat(document.getElementById('af-price').value);
+
+            const newFlight = {
+                id: 'FL-' + Date.now(),
+                number,
+                airline,
+                source,
+                dest,
+                date,
+                time,
+                etd: time,
+                duration,
+                class: flightClass,
+                price,
+                seatsTotal: 120,
+                seatsBooked: [],
+                radarCoord: { x: Math.floor(Math.random() * 70) + 15, y: Math.floor(Math.random() * 70) + 15, heading: 'N', altitude: '36,000 ft', speed: '545 kts' },
+                delay: { isDelayed: false, reason: '', durationMins: 0 }
+            };
+
+            flights.push(newFlight);
+            persistData();
+            
+            document.getElementById('add-flight-form').reset();
+            showToast('New flight schedule published successfully!');
+            populateDropdowns();
+            filterFlights();
+            renderAdminDashboard();
+            renderRadarScope();
+        }
+
+        // Admin: Render Flights Table with Delay Toggle Controls
+        function renderAdminDashboard() {
+            const tbody = document.getElementById('admin-flights-table-body');
+            tbody.innerHTML = flights.map(f => {
+                const isDelayed = f.delay && f.delay.isDelayed;
+                return `
+                    <tr class="border-b border-yellow-500/10 hover:bg-[#18181b]/50 transition">
+                        <td class="py-3 px-4 font-bold text-white">
+                            ${f.airline} <span class="text-xs text-yellow-400 font-mono block">${f.number}</span>
+                        </td>
+                        <td class="py-3 px-4 text-xs font-mono text-slate-300">${f.source} &rarr; ${f.dest}</td>
+                        <td class="py-3 px-4 text-xs font-mono text-slate-400">${f.date} (${f.time})</td>
+                        <td class="py-3 px-4">
+                            ${isDelayed 
+                                ? `<span class="text-xs bg-rose-500/10 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded font-mono block mb-1">⚠ ${f.delay.reason} (+${f.delay.durationMins}m)</span>` 
+                                : `<span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-mono">On Time</span>`}
+                        </td>
+                        <td class="py-3 px-4 flex items-center space-x-2">
+                            <button onclick="toggleFlightDelay('${f.id}')" class="px-3 py-1.5 ${isDelayed ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/30'} rounded-lg text-xs font-mono transition" title="Toggle Delay Warning">
+                                ${isDelayed ? 'Clear Delay' : 'Trigger Delay'}
+                            </button>
+                            <button onclick="deleteFlight('${f.id}')" class="p-2 text-rose-400 hover:bg-rose-500/10 rounded-lg transition" title="Delete Flight">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Admin: Toggle Flight Delay
+        function toggleFlightDelay(flightId) {
+            const f = flights.find(item => item.id === flightId);
+            if(!f) return;
+
+            if(!f.delay || !f.delay.isDelayed) {
+                const reasons = ['Air Traffic Control Congestion', 'Severe Weather Advisory', 'Technical Inspection Required', 'Late Incoming Aircraft'];
+                const randomReason = reasons[Math.floor(Math.random() * reasons.length)];
+                f.delay = { isDelayed: true, reason: randomReason, durationMins: 45 };
+                f.etd = '10:15 PM';
+                showToast(`Delay warning triggered for ${f.number}: ${randomReason}`, false);
+            } else {
+                f.delay = { isDelayed: false, reason: '', durationMins: 0 };
+                f.etd = f.time;
+                showToast(`Delay cleared for ${f.number}. Flight is back on schedule.`);
+            }
+
+            persistData();
+            renderAdminDashboard();
+            filterFlights();
+            renderRadarScope();
+        }
+
+        // Admin: Delete Flight
+        function deleteFlight(flightId) {
+            if(!confirm('Are you sure you want to remove this flight?')) return;
+            flights = flights.filter(f => f.id !== flightId);
+            persistData();
+            showToast('Flight schedule deleted.');
+            populateDropdowns();
+            filterFlights();
+            renderAdminDashboard();
+            renderRadarScope();
+        }
+    </script>
+</body>
+</html>
